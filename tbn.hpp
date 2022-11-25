@@ -127,7 +127,7 @@ std::array<big, 2> div(big c, big a) {
     d++;
   }
   // expand form
-  using expanded = std::vector<int>; // this should really be a two wide array, but because of signs + a_i might not be two wide ... 
+  using expanded = std::vector<int>; // this should really be a two wide array, but because a_i might not be two wide ... 
   std::vector<expanded> aterm, bterm, cterm;
   
   // QoL folding
@@ -138,47 +138,63 @@ std::array<big, 2> div(big c, big a) {
     }
     return f;
   };
+  // QoL power rule
+  auto pmod = [](int i) {
+    return (0 < i) ? std::pow(10, i+1) : 1;
+  };
 
   int rem = fold({cn.at(cn.size()-1), cn.at(cn.size()-2)});
-
+  
   // forming the c and a terms
   for (int i = cn.size()-3; -1 < i; i--) {
     cterm.push_back({cn.at(i), cn.at(i-1)});
     i--;
   }
   for (int i = an.size()-1; -1 < i; i--) {
-    aterm.push_back({an.at(i), an.at(i-1)});
-    i--;
+    expanded a_i{an.at(i)};
+    if (i != 0) { // we don't equalise the a term; we might have an uneven digit count
+      a_i.push_back(an.at(i-1));
+      i--;
+    }
+    aterm.push_back(a_i);
   }
-  
+   
   // applying the general term
+  // we have to move j back one;
+  // the form assumes a base index of 1,
+  // we have a base index of 0
   for (unsigned int i = 0; i<cterm.size(); i++) { 
     // numerator
-    auto numerator = (rem*100)+fold(cterm.at(i));
-    rem = numerator % fold(aterm.at(0));
-    
-    int sum;
+    auto numerator = (rem*pmod(i))+fold(cterm.at(i));
+    rem = (int) numerator % fold(aterm.at(0)); // This CANNOT be a float...
+
     // apply sum
-    for (unsigned int j = 2; -1 < i - (j+1); j++) {
+    int sum;
+    for (unsigned int j = 1; -1 < i - (j+1); j++) {
       sum -= (fold(bterm.at(i-(j+1))) * fold(aterm.at(j))); 
-    }
+    } 
     bterm.push_back({(numerator-rem)/fold(aterm.at(0)) + sum});
   }
-  
+
+  for (const auto& e: bterm) { // DEBUG
+    for (const auto& k: e) {
+      std::cout << k;
+    }
+    std::cout << '\n';
+  }
   // fold in term
   // - apply power rule
   // - determine overall sign (by applying each term)
   big b;
   b.point = d; // set decimal point
-  for (int i = bterm.size(); -1 < i; i--) {
-    auto pmod = (0 < i) ? pow(10, i+1) : 1;
+  for (int i = bterm.size()-1; -1 < i; i--) { 
     if (fold(bterm.at(i)) < 0) {
-      b = add(b, big(fold(bterm.at(i))*pmod));
+      b = add(b, big(fold(bterm.at(i))*pmod(i)));
     } else {
-      b = sub(b, big(fold(bterm.at(i))*pmod));
+      b = sub(b, big(fold(bterm.at(i))*pmod(i)));
     } 
   }
-  
+
   return {b, big(rem)};
 }
 
