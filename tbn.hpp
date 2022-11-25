@@ -4,6 +4,7 @@
 #include <utility>
 #include <cmath>
 #include <string>
+#include <vector>
 
 namespace tbn { // == begin namespace ==
 struct big {
@@ -31,6 +32,7 @@ struct big {
       this->num.at(bi) = (s[i] - '0'); bi++;
     } 
   }
+  big(int n) : big(std::to_string(n)) {} 
   big(){}
 };
 
@@ -111,31 +113,90 @@ big sub(big _a, big _b) {
   return r;
 }
 
-/** 
- * == fourier ==
- * < quotient, remainder >
- * 
- *
- * */
-std::array<big, 2> div(big c, big a) { 
+// == fourier ==
+// < quotient, remainder >
+std::array<big, 2> div(big c, big a) {
+  auto& cn = c.num; auto& an = a.num;
+  // split into power-modifer complient sections
+  unsigned int d = 0; // decimal index
+  // we only shift c, because a_1[0] must be non-zero;
+  // the way we apply the general form, 
+  // a mod 2 doesn't necessarily need to be equal to 0
+  while (cn.size() % 2) {
+    cn.push_back('0');
+    d++;
+  }
+  // expand form
+  using expanded = std::vector<int>; // this should really be a two wide array, but because of signs + a_i might not be two wide ... 
+  std::vector<expanded> aterm, bterm, cterm;
+  
+  // QoL folding
+  auto fold = [](std::vector<int> n) {
+    int f = 0;
+    for (const auto& e: n) {
+      f += e;
+    }
+    return f;
+  };
 
+  int rem = fold({cn.at(cn.size()-1), cn.at(cn.size()-2)});
+
+  // forming the c and a terms
+  for (int i = cn.size()-3; -1 < i; i--) {
+    cterm.push_back({cn.at(i), cn.at(i-1)});
+    i--;
+  }
+  for (int i = an.size()-1; -1 < i; i--) {
+    aterm.push_back({an.at(i), an.at(i-1)});
+    i--;
+  }
+  
+  // applying the general term
+  for (unsigned int i = 0; i<cterm.size(); i++) { 
+    // numerator
+    auto numerator = (rem*100)+fold(cterm.at(i));
+    rem = numerator % fold(aterm.at(0));
+    
+    int sum;
+    // apply sum
+    for (unsigned int j = 2; -1 < i - (j+1); j++) {
+      sum -= (fold(bterm.at(i-(j+1))) * fold(aterm.at(j))); 
+    }
+    bterm.push_back({(numerator-rem)/fold(aterm.at(0)) + sum});
+  }
+  
+  // fold in term
+  // - apply power rule
+  // - determine overall sign (by applying each term)
+  big b;
+  b.point = d; // set decimal point
+  for (int i = bterm.size(); -1 < i; i--) {
+    auto pmod = (0 < i) ? pow(10, i+1) : 1;
+    if (fold(bterm.at(i)) < 0) {
+      b = add(b, big(fold(bterm.at(i))*pmod));
+    } else {
+      b = sub(b, big(fold(bterm.at(i))*pmod));
+    } 
+  }
+  
+  return {b, big(rem)};
 }
 
 
-/** x mod 2 */
-std::size_t mod2(big x) {
+// <big> mod <unsigned int>
+unsigned int mod(big x, unsigned int a) {
   auto& xn = x.num;
-  int rem = 0;
+  unsigned int rem = 0;
   for (int i=xn.size()-1; i>-1; i--) {
-    rem = (rem*10 + xn.at(i)) % 2;
+    rem = (rem*10 + xn.at(i)) % a;
   }
-
   return rem;
 }
 
-/** a mod b */
-// [TODO]
-int mod(big a, big b) { 
-}
+// <big> mod 2
+unsigned int mod2(big x) {return mod(x, 2);}
+
+// <big> mod <big>
+big mod(big x, big y) {return div(x, y)[1];}
 
 } // == end namespace ==

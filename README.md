@@ -5,5 +5,11 @@ Tiny Big Number Library
 
 Just a small, one header big number library.
 
+- Subtraction [x]
+- Addition [x]
+- Modulo [/]
+- Division [/]
+- Multiplication [ ]
+
 ----
 Originally intended for small phyics sims, tbnlib aims to only contain the bare necessities for working with big numbers in c++.

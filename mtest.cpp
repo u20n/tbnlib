@@ -29,13 +29,21 @@ int main(void) {
 
   /** Mod */
   big ma("12345"); big mb("2");
-  // assert(Convert::String(mod(ma, mb)) == "1");
-  // std::cout << "Construct OK\n";
+  assert(mod(ma, mb).string() == "1");
+  std::cout << "<big> mod <big> OK\n";
+  
+  assert(mod(ma, 2) == 1);
+  std::cout << "<big> mod <unsigned int> OK\n";
+
+  assert(mod2(ma) == 1);
+  std::cout << "<big> mod2 OK\n";
+  
+  std::cout << "Modulo OK\n";
 
   /** Div */
   big da("12345"); big db("12345");
-  // assert(Convert::String(fdiv(da, db)) == "1");
-  // std::cout << "Construct OK\n";
+  assert(div(da, db)[0].string() == "1");
+  std::cout << "Division OK\n";
 
   return 0;
 }
