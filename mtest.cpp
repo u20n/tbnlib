@@ -35,6 +35,11 @@ int main(void) {
   assert(sub(sc, sd).string() == "-12336");
   std::cout << "Negative Sub             OK\n";
 
+  /** Multiply */
+  big ua("1234"); big ub("1234");
+  assert(multi(ua, ub).string() == "1522756");
+  std::cout << "Multiplication           OK\n";
+
   /** Mod */
   big ma("12345"); big mb("2");
   assert(mod(ma, mb).string() == "1");
@@ -49,9 +54,9 @@ int main(void) {
   std::cout << "Modulo                   OK\n";
 
   /** Div */
-  big da("12345"); big db("12345");
+  big da("1234512345"); big db("1234512345");
   assert(div(da, db)[0].string() == "1");
   std::cout << "Division                 OK\n";
-
+  
   return 0;
 }

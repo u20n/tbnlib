@@ -11,7 +11,7 @@ struct big {
   // states //
   bool sign = true;
   std::size_t point = 0;
-  std::deque<std::size_t> num; // bigs are always stored flipped; make sure to translate!
+  std::deque<unsigned int> num; // bigs are always stored flipped; make sure to translate!
   
   // translation //
   std::string string() {
@@ -127,8 +127,7 @@ std::array<big, 2> div(big c, big a) {
     d++;
   }
   // expand form
-  using expanded = std::vector<int>; // this should really be a two wide array, but because a_i might not be two wide ... 
-  std::vector<expanded> aterm, bterm, cterm;
+  std::vector<int> aterm, bterm, cterm;
   
   // QoL power rule
   auto pmod = [](int i) {
@@ -138,9 +137,8 @@ std::array<big, 2> div(big c, big a) {
   auto fold = [pmod](std::vector<int> n) {
     int f = 0;
     for (unsigned int i=0; i<n.size(); i++) {
-      f += n.at(i) * pmod(i);
-    }
-    std::cout << "f: " << f << '\n'; // DEBUG
+      f += (n.at(i) * pmod(i));
+    } 
     return f;
   };
 
@@ -149,55 +147,49 @@ std::array<big, 2> div(big c, big a) {
 
   // forming the c and a terms
   for (int i = cn.size()-1; -1 < i; i--) {
-    cterm.push_back({cn.at(i), cn.at(i-1)});
+    cterm.push_back(fold({cn.at(i), cn.at(i-1)}));
     i--;
   }
   for (int i = an.size()-1; -1 < i; i--) {
-    expanded a_i{an.at(i)};
-    if (i != 0) { // we don't equalise the a term; we might have an uneven digit count
-      a_i.push_back(an.at(i-1));
-      i--;
-    }
+    // we don't equalise the a term; we might have an uneven digit count
+    int a_i = (i != 0) ? fold({an.at(i), an.at(i-1)}) : an.at(i);
     aterm.push_back(a_i);
   }
    
   // applying the general term
-  // we have to move j back one;
-  // the form assumes a base index of 1,
-  // we have a base index of 0
+  // we have to move j back one to compensate for an assumed base index of 1
+  int a_0 = aterm.at(0); // reduce complexity
   for (unsigned int i = 0; i < cterm.size(); i++) { 
-    // numerator
-    int numerator = rem+fold(cterm.at(i));
-    std::cout << "n: " << numerator << '\n'; // DEBUG 
-    // apply sum [BREAKING]
-    int sum;
+    // (left) numerator
+    int lnum = rem + cterm.at(i);
+    std::cout << "ln: " << lnum << '\n'; // DEBUG 
+    // apply sum
+    int sum = 0;
     for (unsigned int j = 1; -1 < (i - (j+1)); j++) {
-      sum -= (fold(bterm.at(i-(j+1))) * fold(aterm.at(j))); 
+      std::cout << "b :" << bterm.at(i-(j+1)) << '\n'; // DEBUG
+      std::cout << "a :" << aterm.at(j) << '\n'; // DEBUG
+      
+      sum -= (bterm.at(i-(j+1)) * aterm.at(j)); 
     }
     std::cout << "s: " << sum << '\n'; // DEBUG
-    rem = (numerator + sum) % fold(aterm.at(0));
-    bterm.push_back({(numerator + sum - rem) / fold(aterm.at(0))});
+    rem = (lnum + sum) % a_0;
+    bterm.push_back((lnum + sum - rem) / a_0);
   }
 
-  for (const auto& e: bterm) { // DEBUG
-    for (const auto& k: e) {
-      std::cout << k;
-    }
-    std::cout << '\n';
-  }
-  // fold in term
+  // - fold in term
   // - apply power rule
   // - determine overall sign (by applying each term)
   big b;
-  b.point = d; // set decimal point
-  for (int i = bterm.size()-1; -1 < i; i--) { 
-    if (fold(bterm.at(i)) < 0) {
-      b = add(b, big(fold(bterm.at(i))*pmod(i)));
+  for (int i = bterm.size()-1; -1 < i; i--) {
+    auto& b_i = bterm.at(i); 
+    if (b_i < 0) {
+      b = sub(b, big(b_i*pmod(i)));
     } else {
-      b = sub(b, big(fold(bterm.at(i))*pmod(i)));
-    } 
+      b = add(b, big(b_i*pmod(i))); 
+    }
   }
-
+  print(b); // DEBUG
+  b.point = d; // set decimal point  
   return {b, big(rem)};
 }
 
@@ -217,5 +209,41 @@ unsigned int mod2(big x) {return mod(x, 2);}
 
 // <big> mod <big>
 big mod(big x, big y) {return div(x, y)[1];}
+
+// multi: <big> * <big>
+big multi(big x, big y) {
+  // order the bigs
+  big a, b, f;
+  if (x.num.size() <= y.num.size()) {
+    a = y; b = x;
+  } else {
+    a = x; b = y;
+  }
+
+  // signs
+  if (
+    (x.sign && !y.sign) ||
+    (!x.sign && y.sign)
+    ) f.sign = false;
+  
+  const auto& an = a.num; const auto& bn = b.num;
+  std::deque<unsigned int>r(an.size()+bn.size());
+  
+  for(unsigned int i = 0; i < bn.size(); i++) {
+    for(unsigned int j = 0; j < an.size(); j++) { 
+      r.at(i+j) += an.at(j) * bn.at(i);
+      r.at(i+j+1) = r.at(i+j+1) + (r.at(i+j) / 10);
+      r.at(i+j) %= 10;
+    }
+  }
+  
+  // clean trailing zeros
+  while(r.back() == 0) {
+    r.pop_back();
+  }
+  // done
+  f.num = r; 
+  return f;
+}
 
 } // == end namespace ==
