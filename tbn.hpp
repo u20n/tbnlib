@@ -130,23 +130,25 @@ std::array<big, 2> div(big c, big a) {
   using expanded = std::vector<int>; // this should really be a two wide array, but because a_i might not be two wide ... 
   std::vector<expanded> aterm, bterm, cterm;
   
-  // QoL folding
-  auto fold = [](std::vector<int> n) {
-    int f = 0;
-    for (const auto& e: n) {
-      f += e;
-    }
-    return f;
-  };
   // QoL power rule
   auto pmod = [](int i) {
-    return (0 < i) ? std::pow(10, i+1) : 1;
+    return (0 < i) ? round(pow(10, i+1)) : 1;
+  };
+  // QoL folding
+  auto fold = [pmod](std::vector<int> n) {
+    int f = 0;
+    for (unsigned int i=0; i<n.size(); i++) {
+      f += n.at(i) * pmod(i);
+    }
+    std::cout << "f: " << f << '\n'; // DEBUG
+    return f;
   };
 
   int rem = fold({cn.at(cn.size()-1), cn.at(cn.size()-2)});
-  
+  cn.erase(cn.end()-2, cn.end());
+
   // forming the c and a terms
-  for (int i = cn.size()-3; -1 < i; i--) {
+  for (int i = cn.size()-1; -1 < i; i--) {
     cterm.push_back({cn.at(i), cn.at(i-1)});
     i--;
   }
@@ -163,17 +165,18 @@ std::array<big, 2> div(big c, big a) {
   // we have to move j back one;
   // the form assumes a base index of 1,
   // we have a base index of 0
-  for (unsigned int i = 0; i<cterm.size(); i++) { 
+  for (unsigned int i = 0; i < cterm.size(); i++) { 
     // numerator
-    auto numerator = (rem*pmod(i))+fold(cterm.at(i));
-    rem = (int) numerator % fold(aterm.at(0)); // This CANNOT be a float...
-
-    // apply sum
+    int numerator = rem+fold(cterm.at(i));
+    std::cout << "n: " << numerator << '\n'; // DEBUG 
+    // apply sum [BREAKING]
     int sum;
-    for (unsigned int j = 1; -1 < i - (j+1); j++) {
+    for (unsigned int j = 1; -1 < (i - (j+1)); j++) {
       sum -= (fold(bterm.at(i-(j+1))) * fold(aterm.at(j))); 
-    } 
-    bterm.push_back({(numerator-rem)/fold(aterm.at(0)) + sum});
+    }
+    std::cout << "s: " << sum << '\n'; // DEBUG
+    rem = (numerator + sum) % fold(aterm.at(0));
+    bterm.push_back({(numerator + sum - rem) / fold(aterm.at(0))});
   }
 
   for (const auto& e: bterm) { // DEBUG
