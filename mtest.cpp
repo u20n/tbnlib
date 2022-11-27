@@ -23,7 +23,11 @@ int main(void) {
   /** Add */
   big aa("12345"); big ab("12345");
   assert(add(aa, ab).string() == "24690");
-  std::cout << "Add                      OK\n";
+  std::cout << "Positive Add             OK\n";
+  
+  big ac("-12345");
+  assert(add(ac, aa).string() == "0");
+  std::cout << "Negative Add             OK\n";
 
   /** Subtract */
   big sa("12345"); big sb("12345");
@@ -34,7 +38,7 @@ int main(void) {
 
   assert(sub(sc, sd).string() == "-12336");
   std::cout << "Negative Sub             OK\n";
-
+  
   /** Multiply */
   big ua("1234"); big ub("1234");
   assert(multi(ua, ub).string() == "1522756");
