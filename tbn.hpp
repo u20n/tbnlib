@@ -119,77 +119,33 @@ big add(big _a, big _b) {
 // < quotient, remainder >
 // <big> c / <big> a -> <big> q, <big> r
 std::array<big, 2> div(big c, big a) {
-  auto& cn = c.num; auto& an = a.num;
-  // split into power-modifer complient sections
-  unsigned int d = 0; // decimal index
-  // only [c|2]
-  while (cn.size() % 2) {
-    cn.push_back('0');
-    d++;
-  }
-
-  // 'comma'(?) form
-  std::vector<int> aterm, bterm, cterm;
+  // TODO
   
-  // QoL power rule
-  auto pmod = [](int i) {
-    return (0 < i) ? round(pow(10, i+1)) : 1;
-  };
-  // QoL folding
-  auto fold = [pmod](std::vector<int> n) {
-    int f = 0;
-    for (unsigned int i=0; i<n.size(); i++) {
-      f += (n.at(i) * pmod(i));
-    } 
-    return f;
-  }; 
-
-  // [BREAKING]: in the mod2 test, a_0 isn't a two digit number...
-  // forming the a and c terms 
-  for (int i = an.size()-1; -1 < i; i--) {
-    // we don't equalise the a term; we might have an uneven digit count
-    int a_i = (i != 0) ? fold({an.at(i), an.at(i-1)}) : an.at(i);
-    aterm.push_back(a_i);
-  }
-  for (int i = cn.size()-1; -1 < i; i--) {
-    // [BREAKING] i'm pretty sure that folding in this direction is opposite to correct...
-    cterm.push_back(fold({cn.at(i), cn.at(i-1)}));
-    i--;
-  } 
+  std::deque<int> bterm; // we'll have to balance this later
   
-  // applying the general term
-  int rem = cterm.at(0);
-  int a_0 = aterm.at(0); // reduce complexity
-  for (unsigned int i = 0; i < cterm.size()-1; i++) { 
-    // (left) numerator
-    int lnum = (rem*pmod(1)) + cterm.at(i+1);
-    std::cout << "lnum: " << lnum << '\n'; // DEBUG 
-    // apply sum
+  // pull out initial c_0
+  int rem = (c.num.at(c.num.size()-1 + c.num.at(c.num.size()-2) * 100);
+  // save the operation...
+  int a_0 = (a.num.at(a.size()-1) + a.num.at(a.num.size()-2) * 100);
+  // it's slightly more performant to calculate the (actual) index than to flip the a and c terms...
+  // step size is 2
+  for (int i = c.num.size()-1; 2/** saves the erase call for initial rem */ < i); i-=2) {
     int sum = 0;
-    for (unsigned int j = 2; -1 < (i - (j+1)); j++) {
-      std::cout << "b :" << bterm.at(i-(j+1)) << '\n'; // DEBUG
-      std::cout << "a :" << aterm.at(j) << '\n'; // DEBUG
-      
-      sum -= (bterm.at(i-(j+1)) * aterm.at(j)); 
+    for (unsigned int j=2; -1 < i - (j + 1); j+=2) {
+      // a_j can be a two digit or one digit integer; this checks if a two digit a_j is possible
+      int a_j_len = ( 2 <= (a.size()-1) - j ) ? 100 : 0;
+      sum -= (bterm.at(i - (j+1)) * (a.num.at(j) + a.num.at(j+1)*a_j_len);
     }
     std::cout << "sum: " << sum << '\n'; // DEBUG
-    rem = (lnum + sum) % a_0;
-    std::cout << "a_0: " << a_0 << '\n'; // DEBUG
-    std::cout << "rem: " << rem << '\n'; // DEBUG
-    std::cout << "bterm: " << (lnum + sum - rem) / a_0 << '\n'; // DEBUG
-    std::cout << "--------------------------------\n"; // DEBUG 
-    bterm.push_back((lnum + sum - rem) / a_0);
+    // fold in r and c_{i+1}, apply sum
+    int num = (rem*100 + (c.num.at(i) + c.num.at(i+1)*100)) + sum;
+    // calculate (new) rem
+    rem = (num % a_0);
+    // push to bterm
+    bterm.push_front((num - rem)/a_0);
   }
 
-  // - fold in term
-  // - apply power rule
-  // - applying each term
-  big b;
-  for (int i = bterm.size()-1; -1 < i; i--) { 
-    b = add(b, big(bterm.at(i) * pmod(i)));
-  } 
-  b.point = d; // set decimal point  
-  return {b, big(rem)};
+  // balance b terms
 }
 
 
